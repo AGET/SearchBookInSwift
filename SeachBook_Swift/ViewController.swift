@@ -12,8 +12,7 @@ class ViewController: UIViewController, UISearchBarDelegate {
     
     @IBOutlet weak var busqueda: UISearchBar!
     @IBOutlet weak var texto: UITextView!
-    
-    @IBOutlet weak var texto2: UITextField!
+    @IBOutlet weak var espera: UIActivityIndicatorView!
     
     var tx:String?
     
@@ -49,39 +48,55 @@ class ViewController: UIViewController, UISearchBarDelegate {
     func buscar(isbn: String){
         
         //AsincronoInicio
+        let urls = "https://openlibrary.org/api/books?jscmd=data&format=json&bibkeys=ISBN:\(isbn)"
+        NSLog(urls)
+        let url = NSURL(string:urls)
+        let sesion = NSURLSession.sharedSession()
+        
+        let bloque = {(datos:NSData?,resp : NSURLResponse?,error:NSError?) -> Void in
+            if error == nil{
+                let txt = NSString(data:datos!, encoding: NSUTF8StringEncoding)
+                if txt! != "{}"{
+                    dispatch_async(dispatch_get_main_queue(),{
+                        self.texto.text = txt! as String
+                    })
+                    
+                }else{
+                    dispatch_async(dispatch_get_main_queue(),{
+                        self.mostrarMensajeSimple("Alerta!", message: "No se encontro", owner: self)
+                    })
+                }
+            }else{
+                dispatch_async(dispatch_get_main_queue(),{
+                    self.mostrarMensajeSimple("Alerta!", message: "Error de conexion", owner: self)
+                })
+            }
+            dispatch_async(dispatch_get_main_queue(),{
+                self.espera.stopAnimating()
+            })
+        }
+        let dt = sesion.dataTaskWithURL(url!, completionHandler: bloque)
+        dt.resume()
+        //AsincronoFin
+        
+        
+        //Sincrono
         //        let urls = "https://openlibrary.org/api/books?jscmd=data&format=json&bibkeys=ISBN:\(isbn)"
-        //        NSLog(urls)
         //        let url = NSURL(string:urls)
-        //        let sesion = NSURLSession.sharedSession()
-        //
-        //        let bloque = {(datos:NSData?,resp : NSURLResponse?,error:NSError?) -> Void in
+        //        let datos:NSData?=NSData(contentsOfURL: url!)
+        //        if datos == nil {
+        //            mostrarMensajeSimple("Alerta!", message: "Al parecer hay un error en el internet", owner: self)
+        //        }else{
         //            let txt = NSString(data:datos!, encoding: NSUTF8StringEncoding)
+        //            print(txt!)
         //            if txt! != "{}"{
-        //                self.texto.text = txt! as String
+        //                texto.text = txt! as String
         //            }else{
         //                self.mostrarMensajeSimple("Alerta!", message: "No se encontro", owner: self)
         //            }
         //        }
-        //        let dt = sesion.dataTaskWithURL(url!, completionHandler: bloque)
-        //        dt.resume()
-        //AsincronoFin
-        
-        let urls = "https://openlibrary.org/api/books?jscmd=data&format=json&bibkeys=ISBN:\(isbn)"
-        let url = NSURL(string:urls)
-        let datos:NSData?=NSData(contentsOfURL: url!)
-        if datos == nil {
-            mostrarMensajeSimple("Alerta!", message: "Al parecer hay un error en el internet", owner: self)
-        }else{
-            let txt = NSString(data:datos!, encoding: NSUTF8StringEncoding)
-            print(txt!)
-            if txt! != "{}"{
-                texto.text = txt! as String
-            }else{
-                self.mostrarMensajeSimple("Alerta!", message: "No se encontro", owner: self)
-            }
-        }
-        
-        
+        //SincronoFin
+        self.espera.startAnimating()
     }
     
     @IBAction func limpiar(sender: AnyObject) {
@@ -101,6 +116,5 @@ class ViewController: UIViewController, UISearchBarDelegate {
         // Dispose of any resources that can be recreated.
         
     }
-    
 }
 
